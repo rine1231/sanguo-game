@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三国鼎立 · 阵营抉择</title>
+<style>
+  :root{
+    --paper:#f5efe2;
+    --paper-deep:#ece3d0;
+    --ink:#2b3a4a;
+    --ink-soft:#5a6b7d;
+    --cinnabar:#b33a2b;
+    --cinnabar-deep:#8f2d21;
+    --gold:#c9a24b;
+    --line:#d8cdb6;
+    --card-bg:rgba(255,252,245,0.97);
+    --shadow:0 8px 30px rgba(40,30,10,0.18);
+    /* 势力色 */
+    --wei:#4a6fa5;   /* 魏 黛蓝 */
+    --shu:#c0392b;   /* 蜀 朱红 */
+    --wu:#2e8b57;    /* 吴 青绿 */
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:"Songti SC","STSong","Noto Serif SC","SimSun",serif;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #fbf7ee 0%, transparent 60%),
+      var(--paper);
+    color:var(--ink);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    -webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* ===== 通用 ===== */
+  .hidden{display:none !important;}
+
+  /* ===== 选阵营页 ===== */
+  #selectScreen{
+    position:fixed;inset:0;z-index:100;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    background:
+      radial-gradient(900px 500px at 50% 30%, rgba(201,162,75,.12) 0%, transparent 60%),
+      var(--paper);
+    padding:20px;
+  }
+  #selectScreen .title{
+    font-size:40px;font-weight:800;letter-spacing:8px;
+    color:var(--ink);margin-bottom:6px;
+  }
+  #selectScreen .title .seal{
+    display:inline-block;background:var(--cinnabar);color:#fff;
+    font-size:18px;padding:4px 14px;margin-left:14px;
+    letter-spacing:4px;border-radius:3px;vertical-align:6px;
+  }
+  #selectScreen .subtitle{
+    font-size:15px;color:var(--ink-soft);letter-spacing:3px;margin-bottom:40px;
+  }
+  .faction-cards{
+    display:flex;gap:28px;flex-wrap:wrap;justify-content:center;
+  }
+  .faction-card{
+    width:240px;
+    background:var(--card-bg);
+    border:2px solid var(--line);
+    border-radius:14px;
+    padding:26px 22px;
+    cursor:pointer;
+    text-align:center;
+    transition:all .2s ease;
+    box-shadow:0 4px 16px rgba(40,30,10,.08);
+    position:relative;
+  }
+  .faction-card:hover{
+    transform:translateY(-8px);
+    box-shadow:var(--shadow);
+  }
+  .faction-card.wei{border-color:var(--wei);}
+  .faction-card.shu{border-color:var(--shu);}
+  .faction-card.wu{border-color:var(--wu);}
+  .faction-card .fname{
+    font-size:30px;font-weight:800;letter-spacing:4px;margin-bottom:6px;
+  }
+  .faction-card.wei .fname{color:var(--wei);}
+  .faction-card.shu .fname{color:var(--shu);}
+  .faction-card.wu .fname{color:var(--wu);}
+  .faction-card .fchar{
+    width:70px;height:70px;border-radius:50%;
+    margin:12px auto;display:flex;align-items:center;justify-content:center;
+    font-size:38px;font-weight:800;color:#fff;
+  }
+  .faction-card.wei .fchar{background:var(--wei);}
+  .faction-card.shu .fchar{background:var(--shu);}
+  .faction-card.wu .fchar{background:var(--wu);}
+  .faction-card .fdesc{
+    font-size:13px;color:var(--ink-soft);line-height:1.7;text-align:left;
+  }
+  .faction-card .fbase{
+    margin-top:12px;font-size:12px;color:var(--ink-soft);
+    border-top:1px dashed var(--line);padding-top:10px;text-align:left;line-height:1.8;
+  }
+  .faction-card .fbase b{color:var(--ink);}
+
+  /* ===== 游戏主界面 ===== */
+  header{
+    flex:0 0 auto;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 28px 8px;
+    position:relative;z-index:20;
+  }
+  header .title-block{display:flex;align-items:baseline;gap:12px;}
+  header h1{font-size:22px;font-weight:700;letter-spacing:2px;color:var(--ink);}
+  header .sub{font-size:12px;color:var(--ink-soft);letter-spacing:1px;}
+  header .camp-badge{
+    display:flex;align-items:center;gap:8px;
+    font-size:15px;font-weight:700;letter-spacing:2px;
+  }
+  header .camp-badge .dot{width:16px;height:16px;border-radius:50%;}
+  header .reset-btn{
+    font-size:13px;color:var(--ink-soft);
+    border:1px solid var(--line);border-radius:16px;
+    padding:5px 14px;cursor:pointer;background:var(--card-bg);
+    letter-spacing:1px;
+  }
+  header .reset-btn:hover{color:var(--cinnabar);border-color:var(--cinnabar);}
+
+  .stage{
+    flex:1 1 auto;position:relative;margin:0 28px;min-height:0;
+  }
+  .map-wrap{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  }
+  .map-stack{position:relative;width:100%;height:100%;max-width:1259px;max-height:852px;}
+  .map-layer{
+    position:absolute;inset:0;
+    background-size:contain;background-position:center;background-repeat:no-repeat;
+    opacity:0;transition:opacity .5s ease;pointer-events:none;
+  }
+  .map-layer.active{opacity:1;z-index:1;}
+
+  .year-badge{
+    position:absolute;top:14px;left:16px;z-index:6;
+    background:rgba(43,58,74,.88);color:#fff;
+    font-size:14px;letter-spacing:1px;padding:5px 14px;border-radius:18px;
+    pointer-events:none;
+  }
+  .year-badge b{font-size:18px;color:var(--gold);margin:0 2px;}
+
+  /* 城池热区（势力都城等关键点） */
+  .hotspot{
+    position:absolute;width:22px;height:22px;transform:translate(-50%,-50%);
+    cursor:pointer;z-index:5;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .hotspot::after{
+    content:"";width:11px;height:11px;border-radius:50%;
+    background:var(--gold);border:2px solid #fff;
+    box-shadow:0 0 0 2px var(--gold),0 2px 5px rgba(0,0,0,.3);
+    transition:transform .15s ease;
+  }
+  .hotspot:hover::after{transform:scale(1.4);}
+
+  /* ===== 事件/决策面板 ===== */
+  .event-panel{
+    position:absolute;right:20px;bottom:20px;z-index:20;
+    width:360px;
+    background:var(--card-bg);
+    border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--shadow);
+    padding:18px 20px;
+    animation:panelIn .3s ease;
+  }
+  @keyframes panelIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .event-panel .ev-head{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:8px;
+  }
+  .event-panel .ev-year{
+    font-size:13px;color:var(--cinnabar-deep);font-weight:700;letter-spacing:1px;
+  }
+  .event-panel .ev-title{
+    font-size:19px;font-weight:800;letter-spacing:1px;color:var(--ink);
+  }
+  .event-panel .ev-desc{
+    font-size:13px;line-height:1.7;color:var(--ink);margin:8px 0 14px;
+  }
+  .event-panel .ev-desc .highlight{color:var(--cinnabar-deep);font-weight:700;}
+
+  /* 手牌 */
+  .hand{
+    display:flex;gap:10px;margin-bottom:14px;
+  }
+  .card{
+    flex:1;min-width:0;
+    background:#fff;border:2px solid var(--line);border-radius:10px;
+    padding:12px 10px;cursor:pointer;text-align:center;
+    transition:all .18s ease;position:relative;
+  }
+  .card:hover{transform:translateY(-4px);box-shadow:0 6px 16px rgba(40,30,10,.15);}
+  .card.selected{border-color:var(--cinnabar);box-shadow:0 0 0 3px rgba(179,58,43,.18);}
+  .card .ctype{
+    position:absolute;top:6px;left:8px;font-size:10px;
+    color:#fff;padding:1px 6px;border-radius:8px;letter-spacing:1px;
+  }
+  .card .ctype.troop{background:var(--cinnabar);}
+  .card .ctype.scheme{background:var(--wei);}
+  .card .ctype.diplo{background:var(--wu);}
+  .card .cname{font-size:15px;font-weight:700;letter-spacing:1px;margin-top:14px;color:var(--ink);}
+  .card .ceffect{font-size:11px;color:var(--ink-soft);line-height:1.5;margin-top:4px;}
+
+  .confirm-btn{
+    width:100%;padding:12px;border:none;border-radius:8px;
+    background:var(--cinnabar);color:#fff;font-size:16px;font-weight:700;
+    letter-spacing:3px;cursor:pointer;transition:all .15s ease;
+  }
+  .confirm-btn:hover{background:var(--cinnabar-deep);}
+  .confirm-btn:disabled{background:#c8c0b2;cursor:not-allowed;}
+
+  /* 结果反馈 */
+  .result-box{
+    margin-top:12px;padding:12px 14px;border-radius:8px;
+    background:var(--paper-deep);border-left:4px solid var(--gold);
+    font-size:13px;line-height:1.7;color:var(--ink);
+    animation:panelIn .3s ease;
+  }
+  .result-box .r-title{font-weight:800;color:var(--cinnabar-deep);margin-bottom:4px;}
+
+  /* ===== 底部时间轴 ===== */
+  footer{
+    flex:0 0 auto;padding:8px 40px 16px;position:relative;z-index:20;
+  }
+  .timeline{position:relative;max-width:1259px;margin:0 auto;}
+  .timeline .rail{
+    position:relative;height:4px;background:var(--line);
+    border-radius:2px;margin:0 14px;
+  }
+  .timeline .rail .fill{
+    position:absolute;left:0;top:0;bottom:0;
+    background:linear-gradient(90deg,var(--cinnabar),var(--gold));
+    border-radius:2px;width:0%;
+  }
+  .node{
+    position:absolute;top:50%;transform:translate(-50%,-50%);
+    width:16px;height:16px;border-radius:50%;
+    background:#fff;border:3px solid var(--cinnabar);cursor:pointer;
+    transition:all .15s ease;
+  }
+  .node.done{border-color:var(--cinnabar);background:var(--cinnabar);}
+  .node.current{
+    background:var(--gold);border-color:var(--cinnabar);
+    box-shadow:0 0 0 5px rgba(201,162,75,.35);
+    transform:translate(-50%,-50%) scale(1.2);
+  }
+  .node .label{
+    position:absolute;top:22px;left:50%;transform:translateX(-50%);
+    white-space:nowrap;font-size:12px;color:var(--ink-soft);
+    pointer-events:none;transition:all .15s ease;
+  }
+  .node .label .yr{font-weight:700;color:var(--ink);font-size:13px;}
+  .node.current .label{top:26px;}
+  .node.current .label .yr{color:var(--cinnabar);font-size:15px;font-weight:800;}
+
+  .year-readout{
+    text-align:center;margin-top:42px;font-size:14px;
+    color:var(--ink-soft);letter-spacing:1px;
+  }
+  .year-readout b{font-size:20px;color:var(--cinnabar-deep);margin:0 6px;}
+
+  /* 阵营信息条 */
+  .camp-info{
+    position:absolute;left:20px;bottom:20px;z-index:20;
+    background:var(--card-bg);border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--shadow);padding:14px 18px;
+    display:flex;flex-direction:column;gap:6px;
+    min-width:180px;
+  }
+  .camp-info .ci-name{font-size:16px;font-weight:800;letter-spacing:2px;}
+  .camp-info .ci-line{font-size:12px;color:var(--ink-soft);line-height:1.7;}
+  .camp-info .ci-line b{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<!-- ===== 选阵营页 ===== -->
+<div id="selectScreen">
+  <div class="title">三国鼎立<span class="seal">阵营抉择</span></div>
+  <div class="subtitle">官渡之战（200）—— 三国鼎立（220）· 你选择哪一方？</div>
+  <div class="faction-cards" id="factionCards"></div>
+</div>
+
+<!-- ===== 游戏主界面 ===== -->
+<div id="gameScreen" class="hidden" style="display:flex;flex-direction:column;flex:1;height:100%;">
+  <header>
+    <div class="title-block">
+      <h1>三国鼎立 · 阵营抉择</h1>
+      <span class="sub" id="headerSub">官渡 → 鼎立</span>
+    </div>
+    <div class="camp-badge" id="campBadge"></div>
+    <button class="reset-btn" id="resetBtn">重选阵营</button>
+  </header>
+
+  <div class="stage">
+    <div class="map-wrap">
+      <div class="map-stack" id="mapStack"></div>
+    </div>
+    <div class="year-badge" id="yearBadge">公元 <b>200</b> 年</div>
+    <div class="camp-info" id="campInfo"></div>
+    <div class="event-panel" id="eventPanel"></div>
+  </div>
+
+  <footer>
+    <div class="timeline" id="timeline">
+      <div class="rail"><div class="fill" id="railFill"></div></div>
+    </div>
+    <div class="year-readout">当前 <b id="readoutYear">200年</b> · <span id="readoutEvent">官渡之战</span></div>
+  </footer>
+</div>
+
+<script>
+// ==================== 数据定义 ====================
+
+// 三国版图（引用外部图片文件，减小 HTML 体积、利于缓存）
+const MAP_IMAGES = {
+  200:"images/sg_200.png",
+  208:"images/sg_208.png",
+  220:"images/sg_220.png",
+  221:"images/sg_221.png",
+  222:"images/sg_222.png",
+  229:"images/sg_229.png",
+  263:"images/sg_263.png"
+};
+
+// 三个阵营
+const FACTIONS = {
+  wei: {
+    name:"魏", full:"曹魏", char:"魏",
+    color:"var(--wei)",
+    desc:"挟天子以令诸侯，据中原形胜之地，人才济济，兵精粮足。",
+    base:"君主：曹操 → 曹丕\n谋士：荀彧 · 郭嘉 · 贾诩\n武将：张辽 · 夏侯惇 · 曹仁",
+    intro:"北方霸主，坐拥中原与河北，实力最强。",
+  },
+  shu: {
+    name:"蜀", full:"蜀汉", char:"蜀",
+    color:"var(--shu)",
+    desc:"汉室宗亲，据益州天府之国，以兴复汉室为己任。",
+    base:"君主：刘备 → 刘禅\n谋士：诸葛亮 · 法正 · 庞统\n武将：关羽 · 张飞 · 赵云",
+    intro:"西南一隅，凭险据守，心怀兴汉大志。",
+  },
+  wu: {
+    name:"吴", full:"东吴", char:"吴",
+    color:"var(--wu)",
+    desc:"据江东之险，长江天堑，水军雄冠天下。",
+    base:"君主：孙策 → 孙权\n谋士：周瑜 · 鲁肃 · 陆逊\n武将：甘宁 · 太史慈 · 吕蒙",
+    intro:"东南水乡，坐拥长江天险，水师无敌。",
+  }
+};
+
+// 历史事件（6个）
+// 每个事件：年份、标题、背景、可选卡牌、各阵营视角与决策结果
+const EVENTS = [
+  {
+    year:200, title:"官渡之战", mapYear:200,
+    desc:"袁绍率十万大军南下，曹操以少兵据守官渡。<span class='highlight'>此战定北方归属。</span>",
+    // 通用卡牌（根据阵营不同会展示不同文案）
+    cards:[
+      {id:"odd", type:"scheme", name:"奇袭乌巢", desc:"偷袭袁绍粮仓"},
+      {id:"hold", type:"troop", name:"据险固守", desc:"坚守待变"},
+      {id:"ally", type:"diplo", name:"联结外援", desc:"争取盟友夹击"},
+    ],
+    // 每个阵营的决策结果
+    results:{
+      wei:{
+        odd:"你亲自率军奇袭乌巢，火烧袁绍粮草！袁军军心大乱，曹操乘势大破袁绍，<b>官渡之战大胜</b>，北方从此尽归曹操。",
+        hold:"你选择固守官渡。虽一时稳住阵脚，但袁绍势大，长期对峙粮草告急——幸得许攸来投，曹操终获转机。",
+        ally:"你派使者联结孙策、刘表，虽未能及时来援，却牵制了袁绍侧翼，为后来曹操反攻赢得时间。",
+      },
+      shu:{
+        odd:"你（刘备）此时依附袁绍。你建议袁绍奇袭乌巢，但袁绍不听，反疑心于你。官渡袁军大败，<b>刘备南下投刘表</b>，避祸荆州。",
+        hold:"你劝袁绍持重固守，袁绍迟疑不决。曹操奇袭乌巢成功，袁军溃败，你随败军退走，后投奔荆州刘表。",
+        ally:"你力主联结各方夹击曹操，但袁绍阵营内斗不休，计策难行。战后你辗转投靠刘表，暂居新野。",
+      },
+      wu:{
+        odd:"你（孙权）坐观北方争雄。曹操奇袭乌巢大胜，<b>北方一统之势已成</b>，江东感到巨大压力，你开始整军备战。",
+        hold:"你暂不出手，静观其变。袁曹相持之际，江东得以休养生息，积蓄力量，等待时机。",
+        ally:"你暗中与曹操结好，互不侵犯。曹操专注北方，江东得以全力发展，为日后抗曹做准备。",
+      }
+    }
+  },
+  {
+    year:208, title:"赤壁之战", mapYear:208,
+    desc:"曹操统兵南下，欲一统天下。孙刘联军能否以弱胜强？<span class='highlight'>此战定三分天下。</span>",
+    cards:[
+      {id:"fire", type:"scheme", name:"火攻之计", desc:"借东风火攻曹营"},
+      {id:"navy", type:"troop", name:"水军迎击", desc:"凭水军优势正面决战"},
+      {id:"defend", type:"troop", name:"据江而守", desc:"依托长江天险拒敌"},
+    ],
+    results:{
+      wei:{
+        fire:"你（曹操）铁索连船，却被孙刘联军借东风火攻！<b>赤壁大败</b>，曹操退回北方，一统天下的梦想就此破灭。",
+        navy:"你挥师南下，但北方将士不习水战，又逢疫病流行。长江天险难渡，曹操被迫北撤，统一大业受挫。",
+        defend:"你选择稳步推进，但孙刘联军扼守长江，曹操久攻不下，终因粮草不济退兵。",
+      },
+      shu:{
+        fire:"你（刘备）与孙权联手，诸葛亮借东风、周瑜纵火，<b>火攻大破曹军</b>！刘备乘胜取荆州四郡，有了立足之地。",
+        navy:"你与周瑜水陆并进，凭借水军优势在赤壁大破曹军，刘备得以占据荆州南部，站稳脚跟。",
+        defend:"你据守夏口，与孙权共拒曹操。曹军不习水战自溃，刘备趁机收取荆州，事业迎来转机。",
+      },
+      wu:{
+        fire:"你（孙权）采纳周瑜火攻之计，<b>赤壁大捷</b>！曹操北遁，江东转危为安，孙权从此坐稳江东，与北方分庭抗礼。",
+        navy:"周瑜、程普率水军迎战，凭借长江天险和水军优势大破曹军，江东威震天下。",
+        defend:"你据守柴桑，鲁肃力主联刘抗曹。曹军久攻不下自退，孙权保住江东基业。",
+      }
+    }
+  },
+  {
+    year:220, title:"曹丕代汉", mapYear:220,
+    desc:"曹操病逝，曹丕篡汉称帝，东汉灭亡。<span class='highlight'>天下三分已现端倪。</span>",
+    cards:[
+      {id:"claim", type:"diplo", name:"称帝建国", desc:"登基称帝，名正言顺"},
+      {id:"wait", type:"scheme", name:"暂缓称帝", desc:"静待时机再图大业"},
+      {id:"orthodox", type:"diplo", name:"尊汉讨逆", desc:"高举汉室旗帜声讨"},
+    ],
+    results:{
+      wei:{
+        claim:"你（曹丕）代汉称帝，建立魏国，<b>改元黄初</b>。从此魏据北方，正统之争由此开启。",
+        wait:"你暂缓称帝，继续以丞相之职辅政。但人心思变，终究难挡改朝换代之势。",
+        orthodox:"你继续尊奉汉室，但汉已名存实亡，天下终将归于你曹氏之手。",
+      },
+      shu:{
+        claim:"你（刘备）得知曹丕篡汉，<b>于次年称帝</b>，国号汉（史称蜀汉），以兴复汉室为己任，正统在蜀。",
+        wait:"你暂不称帝，但天下已乱，兴汉大业需要名分。你开始筹备称帝，以承汉祚。",
+        orthodox:"你高举汉室旗帜，声讨曹丕篡逆，<b>赢得了天下人心</b>，为蜀汉立国奠定正统根基。",
+      },
+      wu:{
+        claim:"你（孙权）暂时称臣于魏，接受吴王封号，<b>韬光养晦</b>，静待时机，日后终将自立。",
+        wait:"你暂不表态，坐观曹刘相争。江东稳坐渔利，积蓄力量。",
+        orthodox:"你名义上仍尊汉，但汉已灭亡。孙权审时度势，暂受魏封，保全江东。",
+      }
+    }
+  },
+  {
+    year:221, title:"刘备称帝", mapYear:221,
+    desc:"刘备在成都称帝，建立蜀汉，随后兴兵伐吴，为关羽复仇。<span class='highlight'>孙刘联盟破裂。</span>",
+    cards:[
+      {id:"attack", type:"troop", name:"兴兵伐吴", desc:"举倾国之兵东征"},
+      {id:"peace", type:"diplo", name:"维持联盟", desc:"忍一时之怒续盟"},
+      {id:"focus", type:"scheme", name:"北伐曹魏", desc:"弃吴北伐，兴复汉室"},
+    ],
+    results:{
+      wei:{
+        attack:"你（曹魏）坐山观虎斗！刘备伐吴，孙刘反目，<b>魏国坐收渔利</b>，静待两国相争。",
+        peace:"你希望孙刘继续联盟，但你深知联盟已裂。魏国暗中备战，伺机而动。",
+        focus:"你警惕蜀汉北伐，加强西部防线。若刘备北上，必将迎头痛击。",
+      },
+      shu:{
+        attack:"你（刘备）不听诸葛亮劝阻，举兵伐吴，<b>却在夷陵被陆逊火烧连营</b>，大败而归，蜀汉元气大伤。",
+        peace:"你忍痛维持孙刘联盟，虽失关羽之仇未报，但保存了蜀汉实力，得以继续北伐曹魏。",
+        focus:"你采纳诸葛亮北伐之策，但荆州已失，蜀汉困于益州，北伐之路艰难。",
+      },
+      wu:{
+        attack:"你（孙权）面对刘备来犯，启用陆逊，<b>夷陵之战火烧连营七百里</b>，大破蜀军，孙权坐稳江东。",
+        peace:"你力主维持孙刘联盟，遣使修好。但刘备执意复仇，联盟终告破裂。",
+        focus:"你料定刘备可能北伐，故联魏抗蜀。孙刘联盟名存实亡，三国格局彻底成形。",
+      }
+    }
+  },
+  {
+    year:222, title:"夷陵之战", mapYear:222,
+    desc:"刘备大军压境，陆逊以逸待劳。<span class='highlight'>此战定蜀汉衰落与吴之稳固。</span>",
+    cards:[
+      {id:"lure", type:"scheme", name:"诱敌深入", desc:"以退为进，待其师老"},
+      {id:"decisive", type:"troop", name:"决战出击", desc:"主动求战，速战速决"},
+      {id:"reconcile", type:"diplo", name:"遣使求和", desc:"罢兵修好，保全实力"},
+    ],
+    results:{
+      wei:{
+        lure:"你（曹魏）旁观孙刘火并，<b>魏国趁机休养生息</b>，积蓄国力，等待一统天下的时机。",
+        decisive:"你按兵不动，静观其变。两国相争，魏国坐享其成。",
+        reconcile:"你乐见孙刘讲和失败。两虎相争，必有一伤，魏国坐收渔人之利。",
+      },
+      shu:{
+        lure:"你（刘备）轻敌冒进，被陆逊诱入夷陵，<b>火烧连营，蜀军几乎全军覆没</b>，刘备退守白帝城，次年病逝。",
+        decisive:"你急于复仇，贸然决战，反中陆逊之计，<b>夷陵惨败</b>，蜀汉从此由盛转衰。",
+        reconcile:"你本可罢兵，但复仇之心难平。最终夷陵战败，蜀汉元气大伤，诸葛亮受托孤之重。",
+      },
+      wu:{
+        lure:"你（孙权）采纳陆逊之策，诱敌深入，<b>夷陵之战大获全胜</b>，孙权稳固江东，三国鼎立之势就此奠定。",
+        decisive:"陆逊主动出击，火烧蜀营，大破刘备。吴国威震天下，孙权地位更加稳固。",
+        reconcile:"你愿与蜀修好，但刘备执意伐吴。战事难免，所幸陆逊大胜，吴国转危为安。",
+      }
+    }
+  },
+  {
+    year:229, title:"三国鼎立", mapYear:229,
+    desc:"孙权称帝，三国鼎立正式形成。<span class='highlight'>魏、蜀、吴并立，天下三分。</span>",
+    cards:[
+      {id:"expand", type:"troop", name:"开疆拓土", desc:"北伐/西征，图谋一统"},
+      {id:"govern", type:"scheme", name:"修内政", desc:"休养生息，富国强兵"},
+      {id:"unify", type:"diplo", name:"远交近攻", desc:"结盟牵制，徐图天下"},
+    ],
+    results:{
+      wei:{
+        expand:"你（曹魏）据中原，实力最强。图谋一统天下，<b>终由司马氏代魏灭蜀吴</b>，完成统一。",
+        govern:"你整顿内政，发展生产。魏国国力日盛，为日后统一天下奠定基础。",
+        unify:"你远交近攻，分化吴蜀。三国鼎立之局，终究由北方的魏完成统一大业。",
+      },
+      shu:{
+        expand:"你（诸葛亮）北伐中原，六出祁山，<b>鞠躬尽瘁，死而后已</b>。蜀汉虽弱，却以兴复汉室的精神感动千古。",
+        govern:"诸葛亮治理蜀地，发展农业，巩固南中。蜀汉虽偏安一隅，却政治清明，百姓安居。",
+        unify:"你联吴抗魏，维持鼎立。蜀汉在夹缝中求存，终因国力悬殊而被魏所灭。",
+      },
+      wu:{
+        expand:"你（孙权）据江东，北拒曹魏，西联蜀汉。吴国在鼎立中割据一方，<b>终被西晋所灭</b>，三国归晋。",
+        govern:"孙权治理江东，发展水师，开发江南。吴国经济繁荣，为江南开发作出贡献。",
+        unify:"你联蜀抗魏，维持鼎立。三国相持数十年，最终天下归于司马氏。",
+      }
+    }
+  }
+];
+
+// ==================== 状态 ====================
+let faction = null;      // 当前阵营 key
+let eventIndex = 0;      // 当前事件索引
+let selectedCard = null; // 当前选中的卡牌
+let phase = 'select';    // 'select' 选阵营 | 'play' 出牌 | 'result' 看结果
+
+// ==================== 选阵营页 ====================
+const factionCards = document.getElementById('factionCards');
+Object.entries(FACTIONS).forEach(([key, f]) => {
+  const div = document.createElement('div');
+  div.className = 'faction-card ' + key;
+  div.innerHTML = `
+    <div class="fname">${f.full}</div>
+    <div class="fchar">${f.char}</div>
+    <div class="fdesc">${f.desc}</div>
+    <div class="fbase">${f.base.replace(/\n/g,'<br>')}</div>
+  `;
+  div.addEventListener('click', () => chooseFaction(key));
+  factionCards.appendChild(div);
+});
+
+function chooseFaction(key){
+  faction = key;
+  eventIndex = 0;
+  phase = 'play';
+  document.getElementById('selectScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('hidden');
+  document.getElementById('gameScreen').style.display = 'flex';
+  buildMaps();
+  buildTimeline();
+  updateCampBadge();
+  updateCampInfo();
+  renderEvent();
+}
+
+// ==================== 构建地图层 ====================
+const mapStack = document.getElementById('mapStack');
+const MAP_YEARS = [200,208,220,221,222,229];
+function buildMaps(){
+  mapStack.innerHTML = '';
+  MAP_YEARS.forEach(y => {
+    const div = document.createElement('div');
+    div.className = 'map-layer';
+    div.dataset.year = y;
+    div.style.backgroundImage = `url("${MAP_IMAGES[y]}")`;
+    mapStack.appendChild(div);
+  });
+}
+
+// ==================== 构建时间轴 ====================
+const rail = document.querySelector('.rail');
+const fill = document.getElementById('railFill');
+function buildTimeline(){
+  rail.querySelectorAll('.node').forEach(n=>n.remove());
+  EVENTS.forEach((ev, i) => {
+    const node = document.createElement('div');
+    node.className = 'node';
+    node.style.left = (i/(EVENTS.length-1)*100) + '%';
+    node.innerHTML = `<span class="label"><span class="yr">${ev.year}</span></span>`;
+    node.addEventListener('click', ()=>goToEvent(i));
+    rail.appendChild(node);
+  });
+}
+
+function goToEvent(i){
+  if(i > eventIndex) return; // 只能回看已解锁或当前事件
+  eventIndex = i;
+  phase = 'play';
+  selectedCard = null;
+  renderEvent();
+}
+
+// ==================== 阵营信息 ====================
+function updateCampBadge(){
+  const f = FACTIONS[faction];
+  const badge = document.getElementById('campBadge');
+  badge.innerHTML = `<span class="dot" style="background:${f.color}"></span>${f.full}`;
+  badge.style.color = f.color;
+}
+function updateCampInfo(){
+  const f = FACTIONS[faction];
+  document.getElementById('campInfo').innerHTML = `
+    <div class="ci-name" style="color:${f.color}">${f.full}</div>
+    <div class="ci-line">${f.intro}</div>
+  `;
+}
+
+// ==================== 渲染事件 ====================
+const eventPanel = document.getElementById('eventPanel');
+function renderEvent(){
+  const ev = EVENTS[eventIndex];
+  const f = FACTIONS[faction];
+
+  // 地图
+  mapStack.querySelectorAll('.map-layer').forEach(l => {
+    l.classList.toggle('active', l.dataset.year == ev.mapYear);
+  });
+
+  // 年份
+  document.getElementById('yearBadge').innerHTML = `公元 <b>${ev.year}</b> 年`;
+  document.getElementById('readoutYear').textContent = ev.year + '年';
+  document.getElementById('readoutEvent').textContent = ev.title;
+
+  // 时间轴
+  rail.querySelectorAll('.node').forEach((n,i)=>{
+    n.classList.toggle('done', i < eventIndex);
+    n.classList.toggle('current', i === eventIndex);
+  });
+  fill.style.width = (eventIndex/(EVENTS.length-1)*100) + '%';
+
+  // 事件面板
+  if(phase === 'result'){
+    renderResult();
+  } else {
+    renderPlay();
+  }
+}
+
+function renderPlay(){
+  const ev = EVENTS[eventIndex];
+  selectedCard = null;
+  eventPanel.innerHTML = `
+    <div class="ev-head">
+      <span class="ev-year">${ev.year} 年 · 第${eventIndex+1}/${EVENTS.length}事件</span>
+    </div>
+    <div class="ev-title">${ev.title}</div>
+    <div class="ev-desc">${ev.desc}</div>
+    <div class="hand" id="hand"></div>
+    <button class="confirm-btn" id="confirmBtn" disabled>出 牌</button>
+  `;
+
+  const hand = document.getElementById('hand');
+  ev.cards.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const typeLabel = c.type==='troop'?'武将':(c.type==='scheme'?'计策':'纵横');
+    card.innerHTML = `
+      <span class="ctype ${c.type}">${typeLabel}</span>
+      <div class="cname">${c.name}</div>
+      <div class="ceffect">${c.desc}</div>
+    `;
+    card.addEventListener('click', ()=>{
+      hand.querySelectorAll('.card').forEach(x=>x.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedCard = c.id;
+      document.getElementById('confirmBtn').disabled = false;
+    });
+    hand.appendChild(card);
+  });
+
+  document.getElementById('confirmBtn').addEventListener('click', ()=>{
+    if(!selectedCard) return;
+    phase = 'result';
+    renderResult();
+  });
+}
+
+function renderResult(){
+  const ev = EVENTS[eventIndex];
+  const resultText = ev.results[faction][selectedCard];
+  const cardName = ev.cards.find(c=>c.id===selectedCard).name;
+
+  eventPanel.innerHTML = `
+    <div class="ev-head">
+      <span class="ev-year">${ev.year} 年 · ${ev.title}</span>
+    </div>
+    <div class="ev-title" style="color:var(--cinnabar-deep)">你打出了「${cardName}」</div>
+    <div class="result-box">
+      <div class="r-title">历史推演</div>
+      ${resultText}
+    </div>
+    <button class="confirm-btn" id="nextBtn" style="margin-top:14px;">${eventIndex < EVENTS.length-1 ? '进入下一事件' : '结局 · 回顾全程'}</button>
+  `;
+
+  document.getElementById('nextBtn').addEventListener('click', ()=>{
+    if(eventIndex < EVENTS.length-1){
+      eventIndex++;
+      phase = 'play';
+      renderEvent();
+    } else {
+      // 结局
+      showEnding();
+    }
+  });
+}
+
+function showEnding(){
+  const f = FACTIONS[faction];
+  const endings = {
+    wei:"你作为曹魏一方，亲历了从官渡到鼎立的全程。魏据中原、实力最强，最终由司马氏代魏，西晋一统天下，三国归晋。",
+    shu:"你作为蜀汉一方，亲历了兴复汉室的艰辛。刘备三顾茅庐得诸葛，夷陵之败后诸葛亮鞠躬尽瘁，蜀汉虽亡，其精神千古传颂。",
+    wu:"你作为东吴一方，亲历了据江东而守的历程。赤壁大捷定三分，孙权坐稳江东，吴国开发江南，终被西晋所灭。",
+  };
+  eventPanel.innerHTML = `
+    <div class="ev-head">
+      <span class="ev-year">公元 280 年 · 三国归晋</span>
+    </div>
+    <div class="ev-title">结局 · ${f.full}</div>
+    <div class="result-box">
+      <div class="r-title">你的三国之路</div>
+      ${endings[faction]}
+    </div>
+    <div class="result-box" style="margin-top:10px;">
+      <div class="r-title">历史小知识</div>
+      官渡之战（200）定北方，赤壁之战（208）定三分，夷陵之战（222）定蜀衰。三国鼎立数十载，终由西晋统一（280）。
+    </div>
+    <button class="confirm-btn" id="restartBtn" style="margin-top:14px;">重新选择阵营</button>
+  `;
+  document.getElementById('restartBtn').addEventListener('click', ()=>{
+    resetGame();
+  });
+}
+
+function resetGame(){
+  faction = null;
+  eventIndex = 0;
+  phase = 'select';
+  selectedCard = null;
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('selectScreen').classList.remove('hidden');
+}
+
+// 重选阵营按钮
+document.getElementById('resetBtn').addEventListener('click', resetGame);
+
+// 键盘
+window.addEventListener('keydown', e=>{
+  if(e.key==='Escape') resetGame();
+});
+
+</script>
+</body>
+</html>
