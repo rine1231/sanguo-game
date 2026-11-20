@@ -561,15 +561,36 @@ function chooseFaction(key){
 // ==================== 构建地图层 ====================
 const mapStack = document.getElementById('mapStack');
 const MAP_YEARS = [200,208,220,221,222,229];
+// 懒加载：只给当前年份层设置背景图，其余层延后加载，避免 6 张大图同时抢占带宽
 function buildMaps(){
   mapStack.innerHTML = '';
   MAP_YEARS.forEach(y => {
     const div = document.createElement('div');
     div.className = 'map-layer';
     div.dataset.year = y;
-    div.style.backgroundImage = `url("${MAP_IMAGES[y]}")`;
+    if(y === MAP_YEARS[0]){
+      div.style.backgroundImage = `url("${MAP_IMAGES[y]}")`;
+    }
     mapStack.appendChild(div);
   });
+  preloadImage(MAP_IMAGES[MAP_YEARS[1]]); // 预加载下一张，切换时不卡
+}
+
+// 图片缓存表，避免重复请求
+const _imgCache = {};
+function preloadImage(url){
+  if(!url || _imgCache[url]) return;
+  const im = new Image();
+  im.onload = () => { _imgCache[url] = true; };
+  im.src = url;
+}
+
+// 切换到某一年时，确保该层背景图已就绪
+function ensureMapLayer(year){
+  const layer = mapStack.querySelector(`.map-layer[data-year="${year}"]`);
+  if(layer && !layer.style.backgroundImage){
+    layer.style.backgroundImage = `url("${MAP_IMAGES[year]}")`;
+  }
 }
 
 // ==================== 构建时间轴 ====================
@@ -616,7 +637,12 @@ function renderEvent(){
   const ev = EVENTS[eventIndex];
   const f = FACTIONS[faction];
 
-  // 地图
+  // 地图：确保当前年份背景图已就绪，并预加载下一事件的地图
+  ensureMapLayer(ev.mapYear);
+  const nextIdx = eventIndex + 1;
+  if(nextIdx < EVENTS.length){
+    preloadImage(MAP_IMAGES[EVENTS[nextIdx].mapYear]);
+  }
   mapStack.querySelectorAll('.map-layer').forEach(l => {
     l.classList.toggle('active', l.dataset.year == ev.mapYear);
   });
