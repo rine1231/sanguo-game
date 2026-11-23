@@ -230,6 +230,39 @@
   }
   .result-box .r-title{font-weight:800;color:var(--cinnabar-deep);margin-bottom:4px;}
 
+  /* ===== 势力变化反馈 ===== */
+  .verdict-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 14px;border-radius:999px;font-size:13px;font-weight:800;
+    letter-spacing:2px;margin-top:10px;animation:panelIn .3s ease;
+  }
+  .verdict-badge.win{background:var(--cinnabar);color:#fff;}
+  .verdict-badge.lose{background:var(--wei);color:#fff;}
+  .verdict-badge.draw{background:var(--gold);color:#fff;}
+  .power-board{
+    margin-top:12px;padding:12px 14px;border-radius:8px;
+    background:#fff;border:1px solid var(--line);
+    animation:panelIn .4s ease;
+  }
+  .power-board .pb-title{
+    font-size:12px;color:var(--ink-soft);letter-spacing:2px;margin-bottom:10px;
+  }
+  .power-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .power-row:last-child{margin-bottom:0;}
+  .power-row .pf-name{width:20px;font-size:13px;font-weight:800;flex:0 0 20px;}
+  .power-row .pf-name.wei{color:var(--wei);}
+  .power-row .pf-name.shu{color:var(--shu);}
+  .power-row .pf-name.wu{color:var(--wu);}
+  .power-row .pf-track{flex:1;height:12px;border-radius:6px;background:var(--paper-deep);position:relative;overflow:hidden;}
+  .power-row .pf-fill{height:100%;border-radius:6px;position:absolute;left:0;top:0;transition:width .6s cubic-bezier(.22,1,.36,1);}
+  .power-row .pf-fill.wei{background:linear-gradient(90deg,#6a8fc0,var(--wei));}
+  .power-row .pf-fill.shu{background:linear-gradient(90deg,#e05a4a,var(--shu));}
+  .power-row .pf-fill.wu{background:linear-gradient(90deg,#4aab75,var(--wu));}
+  .power-row .pf-delta{font-size:12px;font-weight:800;width:34px;text-align:right;flex:0 0 34px;}
+  .power-row .pf-delta.up{color:var(--cinnabar);}
+  .power-row .pf-delta.down{color:var(--wu);}
+  .power-row .pf-delta.flat{color:var(--ink-soft);}
+
   /* ===== 底部时间轴 ===== */
   footer{
     flex:0 0 auto;padding:8px 40px 16px;position:relative;z-index:20;
@@ -368,9 +401,15 @@ const EVENTS = [
     desc:"袁绍率十万大军南下，曹操以少兵据守官渡。<span class='highlight'>此战定北方归属。</span>",
     // 通用卡牌（根据阵营不同会展示不同文案）
     cards:[
-      {id:"odd", type:"scheme", name:"奇袭乌巢", desc:"偷袭袁绍粮仓"},
-      {id:"hold", type:"troop", name:"据险固守", desc:"坚守待变"},
-      {id:"ally", type:"diplo", name:"联结外援", desc:"争取盟友夹击"},
+      {id:"odd", type:"scheme", name:"奇袭乌巢", desc:"偷袭袁绍粮仓",
+        verdict:{wei:{tone:"win",label:"官渡大胜"}},
+        delta:{wei:{wei:30,shu:-8,wu:-5}, shu:{wei:30,shu:-10,wu:-3}, wu:{wei:30,shu:-5,wu:-8}}},
+      {id:"hold", type:"troop", name:"据险固守", desc:"坚守待变",
+        verdict:{wei:{tone:"draw",label:"相持胶着"}},
+        delta:{wei:{wei:10,shu:-3,wu:-2}, shu:{wei:10,shu:-5,wu:0}, wu:{wei:10,shu:-2,wu:-3}}},
+      {id:"ally", type:"diplo", name:"联结外援", desc:"争取盟友夹击",
+        verdict:{wei:{tone:"draw",label:"侧翼牵制"}},
+        delta:{wei:{wei:15,shu:-4,wu:-4}, shu:{wei:15,shu:-6,wu:-2}, wu:{wei:15,shu:-3,wu:-5}}},
     ],
     // 每个阵营的决策结果
     results:{
@@ -395,9 +434,15 @@ const EVENTS = [
     year:208, title:"赤壁之战", mapYear:208,
     desc:"曹操统兵南下，欲一统天下。孙刘联军能否以弱胜强？<span class='highlight'>此战定三分天下。</span>",
     cards:[
-      {id:"fire", type:"scheme", name:"火攻之计", desc:"借东风火攻曹营"},
-      {id:"navy", type:"troop", name:"水军迎击", desc:"凭水军优势正面决战"},
-      {id:"defend", type:"troop", name:"据江而守", desc:"依托长江天险拒敌"},
+      {id:"fire", type:"scheme", name:"火攻之计", desc:"借东风火攻曹营",
+        verdict:{wu:{tone:"win",label:"赤壁大捷"}, shu:{tone:"win",label:"乘势立足"}, wei:{tone:"lose",label:"赤壁大败"}},
+        delta:{wei:{wei:-25,shu:12,wu:15}, shu:{wei:-25,shu:18,wu:15}, wu:{wei:-25,shu:10,wu:20}}},
+      {id:"navy", type:"troop", name:"水军迎击", desc:"凭水军优势正面决战",
+        verdict:{wu:{tone:"win",label:"水战大胜"}},
+        delta:{wei:{wei:-15,shu:8,wu:10}, shu:{wei:-15,shu:12,wu:10}, wu:{wei:-15,shu:6,wu:15}}},
+      {id:"defend", type:"troop", name:"据江而守", desc:"依托长江天险拒敌",
+        verdict:{wei:{tone:"lose",label:"久攻不下"}},
+        delta:{wei:{wei:-10,shu:5,wu:6}, shu:{wei:-10,shu:8,wu:6}, wu:{wei:-10,shu:4,wu:10}}},
     ],
     results:{
       wei:{
@@ -421,9 +466,15 @@ const EVENTS = [
     year:220, title:"曹丕代汉", mapYear:220,
     desc:"曹操病逝，曹丕篡汉称帝，东汉灭亡。<span class='highlight'>天下三分已现端倪。</span>",
     cards:[
-      {id:"claim", type:"diplo", name:"称帝建国", desc:"登基称帝，名正言顺"},
-      {id:"wait", type:"scheme", name:"暂缓称帝", desc:"静待时机再图大业"},
-      {id:"orthodox", type:"diplo", name:"尊汉讨逆", desc:"高举汉室旗帜声讨"},
+      {id:"claim", type:"diplo", name:"称帝建国", desc:"登基称帝，名正言顺",
+        verdict:{wei:{tone:"win",label:"代汉建国"}},
+        delta:{wei:{wei:20,shu:-5,wu:-3}, shu:{wei:20,shu:8,wu:-2}, wu:{wei:20,shu:-3,wu:5}}},
+      {id:"wait", type:"scheme", name:"暂缓称帝", desc:"静待时机再图大业",
+        verdict:{wei:{tone:"draw",label:"静待时机"}},
+        delta:{wei:{wei:5,shu:0,wu:0}, shu:{wei:5,shu:3,wu:0}, wu:{wei:5,shu:0,wu:3}}},
+      {id:"orthodox", type:"diplo", name:"尊汉讨逆", desc:"高举汉室旗帜声讨",
+        verdict:{shu:{tone:"win",label:"正统人心"}},
+        delta:{wei:{wei:8,shu:-2,wu:0}, shu:{wei:8,shu:15,wu:0}, wu:{wei:8,shu:0,wu:5}}},
     ],
     results:{
       wei:{
@@ -447,9 +498,15 @@ const EVENTS = [
     year:221, title:"刘备称帝", mapYear:221,
     desc:"刘备在成都称帝，建立蜀汉，随后兴兵伐吴，为关羽复仇。<span class='highlight'>孙刘联盟破裂。</span>",
     cards:[
-      {id:"attack", type:"troop", name:"兴兵伐吴", desc:"举倾国之兵东征"},
-      {id:"peace", type:"diplo", name:"维持联盟", desc:"忍一时之怒续盟"},
-      {id:"focus", type:"scheme", name:"北伐曹魏", desc:"弃吴北伐，兴复汉室"},
+      {id:"attack", type:"troop", name:"兴兵伐吴", desc:"举倾国之兵东征",
+        verdict:{wei:{tone:"win",label:"坐收渔利"}},
+        delta:{wei:{wei:12,shu:-15,wu:-5}, shu:{wei:12,shu:-20,wu:-5}, wu:{wei:12,shu:-15,wu:8}}},
+      {id:"peace", type:"diplo", name:"维持联盟", desc:"忍一时之怒续盟",
+        verdict:{shu:{tone:"draw",label:"保存实力"}},
+        delta:{wei:{wei:5,shu:0,wu:0}, shu:{wei:5,shu:3,wu:2}, wu:{wei:5,shu:2,wu:5}}},
+      {id:"focus", type:"scheme", name:"北伐曹魏", desc:"弃吴北伐，兴复汉室",
+        verdict:{wei:{tone:"draw",label:"严阵以待"}},
+        delta:{wei:{wei:8,shu:-5,wu:0}, shu:{wei:8,shu:5,wu:0}, wu:{wei:8,shu:-5,wu:5}}},
     ],
     results:{
       wei:{
@@ -473,9 +530,15 @@ const EVENTS = [
     year:222, title:"夷陵之战", mapYear:222,
     desc:"刘备大军压境，陆逊以逸待劳。<span class='highlight'>此战定蜀汉衰落与吴之稳固。</span>",
     cards:[
-      {id:"lure", type:"scheme", name:"诱敌深入", desc:"以退为进，待其师老"},
-      {id:"decisive", type:"troop", name:"决战出击", desc:"主动求战，速战速决"},
-      {id:"reconcile", type:"diplo", name:"遣使求和", desc:"罢兵修好，保全实力"},
+      {id:"lure", type:"scheme", name:"诱敌深入", desc:"以退为进，待其师老",
+        verdict:{wu:{tone:"win",label:"夷陵大捷"}, shu:{tone:"lose",label:"夷陵惨败"}},
+        delta:{wei:{wei:10,shu:-18,wu:15}, shu:{wei:10,shu:-25,wu:15}, wu:{wei:10,shu:-18,wu:22}}},
+      {id:"decisive", type:"troop", name:"决战出击", desc:"主动求战，速战速决",
+        verdict:{wu:{tone:"win",label:"大破蜀军"}},
+        delta:{wei:{wei:8,shu:-15,wu:12}, shu:{wei:8,shu:-20,wu:12}, wu:{wei:8,shu:-15,wu:18}}},
+      {id:"reconcile", type:"diplo", name:"遣使求和", desc:"罢兵修好，保全实力",
+        verdict:{wu:{tone:"draw",label:"保全实力"}},
+        delta:{wei:{wei:6,shu:-5,wu:5}, shu:{wei:6,shu:-8,wu:5}, wu:{wei:6,shu:-5,wu:10}}},
     ],
     results:{
       wei:{
@@ -499,9 +562,15 @@ const EVENTS = [
     year:229, title:"三国鼎立", mapYear:229,
     desc:"孙权称帝，三国鼎立正式形成。<span class='highlight'>魏、蜀、吴并立，天下三分。</span>",
     cards:[
-      {id:"expand", type:"troop", name:"开疆拓土", desc:"北伐/西征，图谋一统"},
-      {id:"govern", type:"scheme", name:"修内政", desc:"休养生息，富国强兵"},
-      {id:"unify", type:"diplo", name:"远交近攻", desc:"结盟牵制，徐图天下"},
+      {id:"expand", type:"troop", name:"开疆拓土", desc:"北伐/西征，图谋一统",
+        verdict:{wei:{tone:"win",label:"终归一统"}},
+        delta:{wei:{wei:15,shu:-10,wu:-8}, shu:{wei:15,shu:8,wu:-8}, wu:{wei:15,shu:-10,wu:10}}},
+      {id:"govern", type:"scheme", name:"修内政", desc:"休养生息，富国强兵",
+        verdict:{shu:{tone:"draw",label:"政通人和"}},
+        delta:{wei:{wei:8,shu:0,wu:0}, shu:{wei:8,shu:10,wu:0}, wu:{wei:8,shu:0,wu:8}}},
+      {id:"unify", type:"diplo", name:"远交近攻", desc:"结盟牵制，徐图天下",
+        verdict:{wei:{tone:"win",label:"一统天下"}},
+        delta:{wei:{wei:12,shu:-6,wu:-5}, shu:{wei:12,shu:-6,wu:0}, wu:{wei:12,shu:-6,wu:5}}},
     ],
     results:{
       wei:{
@@ -706,10 +775,50 @@ function renderPlay(){
   });
 }
 
+// 全局势力值：魏/蜀/吴 的势力条基准（0–100 相对强度），随事件累积
+let POWER = { wei:60, shu:30, wu:40 };
+
+// 渲染三势力势力变化条（delta 为本次变化量，from/to 用于动画）
+function renderPowerBoard(delta, fromVals, toVals){
+  const order = [['wei','魏'],['shu','蜀'],['wu','吴']];
+  const rows = order.map(([key,name])=>{
+    const d = delta[key] || 0;
+    let cls = 'flat', sign = '';
+    if(d > 0){ cls = 'up'; sign = '+'; }
+    else if(d < 0){ cls = 'down'; sign = ''; }
+    const deltaText = d === 0 ? '—' : (sign + d);
+    return `
+      <div class="power-row">
+        <span class="pf-name ${key}">${name}</span>
+        <span class="pf-track">
+          <span class="pf-fill ${key}" data-key="${key}" data-from="${fromVals[key]}" data-to="${toVals[key]}"></span>
+        </span>
+        <span class="pf-delta ${cls}">${deltaText}</span>
+      </div>`;
+  }).join('');
+  return `
+    <div class="power-board">
+      <div class="pb-title">三势力消长</div>
+      ${rows}
+    </div>`;
+}
+
 function renderResult(){
   const ev = EVENTS[eventIndex];
   const resultText = ev.results[faction][selectedCard];
-  const cardName = ev.cards.find(c=>c.id===selectedCard).name;
+  const card = ev.cards.find(c=>c.id===selectedCard);
+  const cardName = card.name;
+  // 取该卡对应的势力变化与胜负标签
+  const delta = (card.delta && card.delta[faction]) ? card.delta[faction] : {};
+  const verdict = card.verdict && card.verdict[faction];
+
+  // 计算变化前后的势力值（变化前 = 当前 POWER，变化后 = 应用 delta）
+  const fromVals = { wei:POWER.wei, shu:POWER.shu, wu:POWER.wu };
+  const toVals = { wei:POWER.wei, shu:POWER.shu, wu:POWER.wu };
+  ['wei','shu','wu'].forEach(key=>{
+    const d = delta[key] || 0;
+    toVals[key] = Math.max(5, Math.min(100, POWER[key] + d));
+  });
 
   eventPanel.innerHTML = `
     <div class="ev-head">
@@ -720,8 +829,28 @@ function renderResult(){
       <div class="r-title">历史推演</div>
       ${resultText}
     </div>
+    ${verdict ? `<div class="verdict-badge ${verdict.tone}">${verdict.label}</div>` : ''}
+    ${renderPowerBoard(delta, fromVals, toVals)}
     <button class="confirm-btn" id="nextBtn" style="margin-top:14px;">${eventIndex < EVENTS.length-1 ? '进入下一事件' : '结局 · 回顾全程'}</button>
   `;
+
+  // 动画：先设 from 宽度，下一帧过渡到 to 宽度
+  const fills = eventPanel.querySelectorAll('.pf-fill');
+  fills.forEach(fill=>{
+    fill.style.width = fill.dataset.from + '%';
+  });
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      fills.forEach(fill=>{
+        fill.style.width = fill.dataset.to + '%';
+      });
+    });
+  });
+
+  // 更新全局势力值（本事件结算后）
+  POWER.wei = toVals.wei;
+  POWER.shu = toVals.shu;
+  POWER.wu = toVals.wu;
 
   document.getElementById('nextBtn').addEventListener('click', ()=>{
     if(eventIndex < EVENTS.length-1){
@@ -767,6 +896,7 @@ function resetGame(){
   eventIndex = 0;
   phase = 'select';
   selectedCard = null;
+  POWER = { wei:60, shu:30, wu:40 };
   document.getElementById('gameScreen').classList.add('hidden');
   document.getElementById('selectScreen').classList.remove('hidden');
 }
