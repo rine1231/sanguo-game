@@ -340,6 +340,26 @@
   .map-hotzone.shu .hz-tag{background:var(--shu);}
   .map-hotzone.wu .hz-tag{background:var(--wu);}
 
+  /* ===== 城池热区（圆形标记点） ===== */
+  .city-dot{
+    position:absolute;z-index:4;cursor:pointer;
+    width:22px;height:22px;margin-left:-11px;margin-top:-11px;
+    border-radius:50%;background:var(--gold);
+    border:3px solid #fff;box-shadow:0 0 0 2px var(--gold),0 2px 6px rgba(40,30,10,.4);
+    transition:transform .15s ease;
+  }
+  .city-dot:hover{transform:scale(1.5);}
+  .city-dot .city-label{
+    position:absolute;left:50%;top:-24px;transform:translateX(-50%);
+    font-size:12px;font-weight:800;letter-spacing:1px;color:#fff;
+    background:var(--ink);padding:2px 8px;border-radius:8px;white-space:nowrap;
+    opacity:0;transition:opacity .2s ease;pointer-events:none;
+  }
+  .city-dot:hover .city-label{opacity:1;}
+  .city-dot.wei{background:var(--wei);box-shadow:0 0 0 2px var(--wei),0 2px 6px rgba(40,30,10,.4);}
+  .city-dot.shu{background:var(--shu);box-shadow:0 0 0 2px var(--shu),0 2px 6px rgba(40,30,10,.4);}
+  .city-dot.wu{background:var(--wu);box-shadow:0 0 0 2px var(--wu),0 2px 6px rgba(40,30,10,.4);}
+
   /* ===== 知识面板（弹窗） ===== */
   .know-panel{
     position:absolute;z-index:40;width:340px;
@@ -398,6 +418,16 @@
         </div>
         <div class="map-hotzone wu" data-faction="wu" style="left:58%;top:50%;width:30%;height:36%;">
           <span class="hz-tag">吴 · 东吴</span>
+        </div>
+        <!-- 都城热区（圆形标记点） -->
+        <div class="city-dot wei" data-city="luoyang" style="left:53%;top:41%;">
+          <span class="city-label">洛阳 · 魏都</span>
+        </div>
+        <div class="city-dot shu" data-city="chengdu" style="left:35%;top:57%;">
+          <span class="city-label">成都 · 蜀都</span>
+        </div>
+        <div class="city-dot wu" data-city="jianye" style="left:65%;top:51%;">
+          <span class="city-label">建业 · 吴都</span>
         </div>
       </div>
       <!-- 知识面板容器 -->
@@ -984,6 +1014,25 @@ document.getElementById('resetBtn').addEventListener('click', resetGame);
 // ==================== 势力热区：点击弹出知识面板 ====================
 const knowPanel = document.getElementById('knowPanel');
 
+// 都城知识点数据
+const CITIES = {
+  luoyang: {
+    name:"洛阳", faction:"wei", full:"洛阳 · 魏都",
+    point:"东汉旧都，曹丕代汉后定为魏国都城，地处中原腹地、天下之中。洛阳是东汉、曹魏的政治文化中心，曹魏在此建立并巩固了北方政权。",
+    facts:"中原腹地、十三朝古都、曹魏政治中心"
+  },
+  chengdu: {
+    name:"成都", faction:"shu", full:"成都 · 蜀都",
+    point:"益州治所，刘备 221 年称帝后定为蜀汉都城。成都地处四川盆地、天府之国，物产丰饶、易守难攻，是蜀汉凭险据守、兴复汉室的大本营。",
+    facts:"四川盆地、天府之国、蜀汉大本营"
+  },
+  jianye: {
+    name:"建业", faction:"wu", full:"建业 · 吴都",
+    point:"今南京，孙权 229 年称帝后定为吴国都城。建业扼长江下游天险，虎踞龙盘，水陆交通便利，是东吴开发江南、经营江东的统治中心。",
+    facts:"长江天险、虎踞龙盘、东吴统治中心"
+  }
+};
+
 // 为每个势力热区绑定点击事件
 document.querySelectorAll('.map-hotzone').forEach(hz => {
   hz.addEventListener('click', (e) => {
@@ -993,13 +1042,22 @@ document.querySelectorAll('.map-hotzone').forEach(hz => {
   });
 });
 
+// 为每个城池圆点绑定点击事件
+document.querySelectorAll('.city-dot').forEach(dot => {
+  dot.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const key = dot.dataset.city;
+    showCityPanel(key);
+  });
+});
+
 // 点击地图空白处或按 Esc 关闭知识面板
 document.getElementById('mapStack').addEventListener('click', (e) => {
   if(e.target.classList.contains('map-hotzone')) return;
   hideKnowPanel();
 });
 document.addEventListener('click', (e) => {
-  if(!e.target.closest('.know-panel') && !e.target.closest('.map-hotzone')){
+  if(!e.target.closest('.know-panel') && !e.target.closest('.map-hotzone') && !e.target.closest('.city-dot')){
     hideKnowPanel();
   }
 });
@@ -1024,12 +1082,31 @@ function showKnowPanel(key){
     </div>
   `;
   // 定位面板在热区附近
-  positionKnowPanel(key);
+  positionKnowPanel();
   knowPanel.classList.remove('hidden');
   document.getElementById('kpClose').addEventListener('click', hideKnowPanel);
 }
 
-function positionKnowPanel(key){
+function showCityPanel(key){
+  const c = CITIES[key];
+  const f = FACTIONS[c.faction];
+  knowPanel.innerHTML = `
+    <div class="kp-head">
+      <span class="kp-title" style="color:${f.color}">${c.name}</span>
+      <button class="kp-close" id="kpClose">✕</button>
+    </div>
+    <div class="kp-body">
+      <div class="kp-row"><span class="kp-label">所属势力：</span><span style="font-weight:800;color:${f.color}">${f.full}</span></div>
+      <div class="kp-row"><span class="kp-label">定位：</span>${c.facts}</div>
+    </div>
+    <div class="kp-desc">${c.point}</div>
+  `;
+  positionKnowPanel();
+  knowPanel.classList.remove('hidden');
+  document.getElementById('kpClose').addEventListener('click', hideKnowPanel);
+}
+
+function positionKnowPanel(){
   // 面板居中显示在地图上方，避免遮挡左侧阵营信息条和右侧事件面板
   knowPanel.style.left = '50%';
   knowPanel.style.top = '50%';
