@@ -143,6 +143,13 @@
   }
   .map-layer.active{opacity:1;z-index:1;}
 
+  /* 热区定位层：与 contain 后的图片显示区域精确对齐 */
+  .map-inner{
+    position:absolute;inset:0;margin:auto;
+    width:auto;height:100%;
+    aspect-ratio:1259/852;max-width:100%;
+  }
+
   .year-badge{
     position:absolute;top:14px;left:16px;z-index:6;
     background:rgba(43,58,74,.88);color:#fff;
@@ -315,6 +322,47 @@
   .camp-info .ci-name{font-size:16px;font-weight:800;letter-spacing:2px;}
   .camp-info .ci-line{font-size:12px;color:var(--ink-soft);line-height:1.7;}
   .camp-info .ci-line b{color:var(--ink);}
+
+  /* ===== 势力热区（透明点击区） ===== */
+  .map-hotzone{
+    position:absolute;z-index:3;cursor:pointer;
+    border-radius:12px;background:transparent;
+    transition:background .2s ease;
+  }
+  .map-hotzone:hover{background:rgba(201,162,75,.12);}
+  .map-hotzone .hz-tag{
+    position:absolute;top:8px;left:8px;pointer-events:none;
+    font-size:12px;font-weight:800;letter-spacing:2px;color:#fff;
+    padding:2px 8px;border-radius:8px;opacity:0;transition:opacity .2s ease;
+  }
+  .map-hotzone:hover .hz-tag{opacity:1;}
+  .map-hotzone.wei .hz-tag{background:var(--wei);}
+  .map-hotzone.shu .hz-tag{background:var(--shu);}
+  .map-hotzone.wu .hz-tag{background:var(--wu);}
+
+  /* ===== 知识面板（弹窗） ===== */
+  .know-panel{
+    position:absolute;z-index:40;width:340px;
+    background:var(--card-bg);border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 12px 40px rgba(40,30,10,.25);
+    padding:20px;animation:panelIn .25s ease;
+  }
+  .know-panel .kp-head{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
+  }
+  .know-panel .kp-title{font-size:22px;font-weight:800;letter-spacing:3px;}
+  .know-panel .kp-close{
+    width:24px;height:24px;border-radius:50%;border:1px solid var(--line);
+    background:transparent;color:var(--ink-soft);font-size:14px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;line-height:1;
+  }
+  .know-panel .kp-close:hover{color:var(--cinnabar);border-color:var(--cinnabar);}
+  .know-panel .kp-body{font-size:13px;line-height:1.8;color:var(--ink);}
+  .know-panel .kp-body .kp-label{font-weight:800;color:var(--cinnabar-deep);}
+  .know-panel .kp-desc{
+    margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);
+    font-size:13px;line-height:1.7;color:var(--ink-soft);
+  }
 </style>
 </head>
 <body>
@@ -340,6 +388,20 @@
   <div class="stage">
     <div class="map-wrap">
       <div class="map-stack" id="mapStack"></div>
+      <!-- 热区定位层：与地图图片显示区域对齐 -->
+      <div class="map-inner" id="mapInner">
+        <div class="map-hotzone wei" data-faction="wei" style="left:26%;top:10%;width:46%;height:32%;">
+          <span class="hz-tag">魏 · 曹魏</span>
+        </div>
+        <div class="map-hotzone shu" data-faction="shu" style="left:8%;top:52%;width:28%;height:34%;">
+          <span class="hz-tag">蜀 · 蜀汉</span>
+        </div>
+        <div class="map-hotzone wu" data-faction="wu" style="left:58%;top:50%;width:30%;height:36%;">
+          <span class="hz-tag">吴 · 东吴</span>
+        </div>
+      </div>
+      <!-- 知识面板容器 -->
+      <div class="know-panel hidden" id="knowPanel"></div>
     </div>
     <div class="year-badge" id="yearBadge">公元 <b>200</b> 年</div>
     <div class="camp-info" id="campInfo"></div>
@@ -376,6 +438,11 @@ const FACTIONS = {
     desc:"挟天子以令诸侯，据中原形胜之地，人才济济，兵精粮足。",
     base:"君主：曹操 → 曹丕\n谋士：荀彧 · 郭嘉 · 贾诩\n武将：张辽 · 夏侯惇 · 曹仁",
     intro:"北方霸主，坐拥中原与河北，实力最强。",
+    know:{
+      capital:"洛阳", territory:"中原、河北（黄河流域）",
+      point:"曹操「挟天子以令诸侯」，占据政治制高点；官渡之战后统一北方。220 年曹丕代汉称帝，定都洛阳，魏是三雄中实力最强的一方。",
+      famous:"官渡之战、九品中正制、屯田制"
+    }
   },
   shu: {
     name:"蜀", full:"蜀汉", char:"蜀",
@@ -383,6 +450,11 @@ const FACTIONS = {
     desc:"汉室宗亲，据益州天府之国，以兴复汉室为己任。",
     base:"君主：刘备 → 刘禅\n谋士：诸葛亮 · 法正 · 庞统\n武将：关羽 · 张飞 · 赵云",
     intro:"西南一隅，凭险据守，心怀兴汉大志。",
+    know:{
+      capital:"成都", territory:"西南益州（四川盆地）",
+      point:"刘备以汉室宗亲自居，打着「兴复汉室」的旗号。221 年称帝，定都成都，史称蜀汉。诸葛亮辅佐，凭山川之险据守西南，实力最弱却最具正统号召力。",
+      famous:"三顾茅庐、六出祁山、诸葛亮治蜀"
+    }
   },
   wu: {
     name:"吴", full:"东吴", char:"吴",
@@ -390,6 +462,11 @@ const FACTIONS = {
     desc:"据江东之险，长江天堑，水军雄冠天下。",
     base:"君主：孙策 → 孙权\n谋士：周瑜 · 鲁肃 · 陆逊\n武将：甘宁 · 太史慈 · 吕蒙",
     intro:"东南水乡，坐拥长江天险，水师无敌。",
+    know:{
+      capital:"建业", territory:"江东（长江下游）",
+      point:"孙权据长江天险，水军雄冠天下。赤壁之战联刘抗曹，坐稳江东；229 年称帝，定都建业。吴国开发江南，经济繁荣，为后世江南开发奠定基础。",
+      famous:"赤壁之战、夷陵之战、开发江南"
+    }
   }
 };
 
@@ -904,9 +981,74 @@ function resetGame(){
 // 重选阵营按钮
 document.getElementById('resetBtn').addEventListener('click', resetGame);
 
-// 键盘
+// ==================== 势力热区：点击弹出知识面板 ====================
+const knowPanel = document.getElementById('knowPanel');
+
+// 为每个势力热区绑定点击事件
+document.querySelectorAll('.map-hotzone').forEach(hz => {
+  hz.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const key = hz.dataset.faction;
+    showKnowPanel(key);
+  });
+});
+
+// 点击地图空白处或按 Esc 关闭知识面板
+document.getElementById('mapStack').addEventListener('click', (e) => {
+  if(e.target.classList.contains('map-hotzone')) return;
+  hideKnowPanel();
+});
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('.know-panel') && !e.target.closest('.map-hotzone')){
+    hideKnowPanel();
+  }
+});
+
+function showKnowPanel(key){
+  const f = FACTIONS[key];
+  const k = f.know;
+  knowPanel.innerHTML = `
+    <div class="kp-head">
+      <span class="kp-title" style="color:${f.color}">${f.full}</span>
+      <button class="kp-close" id="kpClose">✕</button>
+    </div>
+    <div class="kp-body">
+      <div class="kp-row"><span class="kp-label">君主：</span>${f.base.split('\n')[0].replace('君主：','')}</div>
+      <div class="kp-row"><span class="kp-label">都城：</span>${k.capital}</div>
+      <div class="kp-row"><span class="kp-label">势力范围：</span>${k.territory}</div>
+      <div class="kp-row"><span class="kp-label">代表人物：</span>${f.base.split('\n')[1].replace('谋士：','')}</div>
+    </div>
+    <div class="kp-desc">${k.point}</div>
+    <div class="kp-desc" style="margin-top:6px;border-top:none;padding-top:0;">
+      <span style="font-weight:800;color:${f.color}">著名事件：</span>${k.famous}
+    </div>
+  `;
+  // 定位面板在热区附近
+  positionKnowPanel(key);
+  knowPanel.classList.remove('hidden');
+  document.getElementById('kpClose').addEventListener('click', hideKnowPanel);
+}
+
+function positionKnowPanel(key){
+  // 面板居中显示在地图上方，避免遮挡左侧阵营信息条和右侧事件面板
+  knowPanel.style.left = '50%';
+  knowPanel.style.top = '50%';
+  knowPanel.style.transform = 'translate(-50%,-50%)';
+}
+
+function hideKnowPanel(){
+  knowPanel.classList.add('hidden');
+}
+
+// 键盘 Esc：优先关闭知识面板，其次重置
 window.addEventListener('keydown', e=>{
-  if(e.key==='Escape') resetGame();
+  if(e.key==='Escape'){
+    if(!knowPanel.classList.contains('hidden')){
+      hideKnowPanel();
+    } else {
+      resetGame();
+    }
+  }
 });
 
 </script>
